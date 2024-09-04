@@ -4,7 +4,7 @@
 Systems Programming:
 
 ### Run time System
-    - standard library features like IO, memory management, etc
+- standard library features like IO, memory management, etc
 
 ### What is an OS (operating systems):
 - Shared implementation of commonly used features
