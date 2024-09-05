@@ -38,6 +38,18 @@ Systems Programming:
     - Compuler translates source code to machine code
         - Source code is readable by humans
         - machine code is binary, understood by CPU
+- Java has a hieracrchical name space
+    - Classes have names like com.sun.foo.bar.MyClass
+    - Methods are specific to a class
+- C has a flat name space
+    - All functions and global variables must have unique names
+- Java has classes and methods
+- C has functions
+    - Functions are just named pieces of code that you can call with parameters
+    - This has some implications:
+        - No implicit parameters
+        - No polymorphism/overloading
+
 
 ### Types of errors in C programs
 - Compile Time Error
@@ -91,6 +103,19 @@ int main(int argc, char **argv){
 - fsanitize=address - activates AddressSanitizer, a dynamic analyzer
 - fsanitize=undefined - activates UBSan (undefined behavior sanitizer)
 
+### Types in C
+ - Built Ins
+    - integers (int)
+        - signed, unsigned - are negative numbers allowed?
+        - short/long/unspecified - how many bits are used?
+            - C does not specify sizes for int/short int/long int
+            - generally, short int < int < long int
+            - short int >= 2 bytes
+            - long int >= 4 bytes
+        - chars are actually integers!
+            - ASCII
+            - can be signed or unsigned
+        
 
 
 
