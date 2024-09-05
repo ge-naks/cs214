@@ -69,5 +69,29 @@ Systems Programming:
     - compile and link and create an executable named "a.out"
 - gcc <filename.c> -o <desired-output-name>
 
+- gcc -c <filename.c>
+    - links and creates and creates an object file
+- gcc <target-filename.o> -o <desired-executable-name>
+    - gcc links and creates an executable named "hello"
+
+- can test w/ below code:
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(int argc, char **argv){
+    puts("Hello, World!);
+    return EXIT_SUCCESS
+}
+```
+
+### Recommended Compiler Options
+- Wall - all warnings
+- fsanitize=address - activates AddressSanitizer, a dynamic analyzer
+- fsanitize=undefined - activates UBSan (undefined behavior sanitizer)
+
+
+
 
 
