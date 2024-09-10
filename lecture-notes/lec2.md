@@ -99,3 +99,105 @@ int y = x + 1 // undefined!
 - foo has 4 bytes, 'f' 'o' 'o' '\0'
 - array initialization:
 - int a[5] = {1, 2, 3, 4, 5};
+    - the above is the same as:
+        - a[0] = 1
+        - a[1] = 2 ...
+- if we use braces, can leave the dimension implicit:
+    - int a[] = {1, 2, 3, 4, 5};
+
+- char s1[] = "foo";
+- char s2[20] = "foo"; // only first 4 indices are initialized
+- char s3[20] = {'f', 'o', 'o', '\0'}
+- note, we cant assign string literals to arrays
+    - s3 = "bar"; // nope!
+    - strcpy(s3, "bar"); // okay!
+
+### Enums
+- Represent ideas, really just integers under the hood
+- example:
+```
+enum direction { north, south, east, west };
+enum direction heading = north;
+
+if (heading != south){
+    // todo
+}
+
+enum direction { red, yellow, blue, green };
+
+heading = red // allowed!
+```
+
+### Struct
+- big daddy of object
+- can bundle together values, refer to them by namespace
+```
+struct point {
+    int x;
+    int y;
+}
+
+struct point p;
+
+p.x = 0
+p.y = 20;
+// p now represents a point at (0,20)
+
+//structs are passed by value
+
+void move(struct point p){
+    p.x +=20; // wouldnt do anything to the *actual* struct, this only affects the local
+}
+
+struct point move(struct point p){
+    p.x += 20;
+    return p; // would create a new struct and return it, can be stored in main program
+}
+```
+
+- fields in a struct can have any type, including other structs
+
+```
+struct circle { 
+    strict point center;
+    double radius;
+    enum color background;
+}
+
+```
+
+- note, structs cannot be directly recursive
+
+```
+struct node{
+    data_t item;
+    struct node next; // not allowed, recursiev!
+}
+```
+
+- fields can be arrays
+
+### Union
+- a value that can be one of several things
+```
+union intorfloat {
+    int i;
+    float f;
+};
+
+union intorfloat x;
+
+x.i = 5;
+// x has an int
+
+x.f = 0.0
+// x has a float now
+```
+
+### TypeDef
+- allows us to create a new name for an existing type (usually shorter)
+- typedef struct pointer PT;
+
+- struct point PT;
+
+PT center;
