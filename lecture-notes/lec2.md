@@ -71,3 +71,31 @@ int y = x + 1 // undefined!
 - Does not include boundaties
 - Cannot check if index is in bounds
 - keep track of your array!
+- array variables are declared with a type and dimension
+- int a[20];
+    - a refers to an array of 20 integers
+    - allocation and deallocation code written by the compiler
+    - sizeof(a) // number of bytes used by a
+    - sizeof(a) / sizeof(a[0]) // trick would work but kinda dumb
+- array indexing:
+    - a[i] get index from a
+    - a[0] gets first element
+
+- multi-dimensional arrays
+    - int m [5][5]; // 25 integers in memory
+    - m[row][col] // first index idientifies subarray, second index is the index within that subarray
+    - m[row] // indentifies a single sub-array
+- array dimensions must be constant expressions
+
+### Strings
+- C does not have a string type!
+- Use a character array to store strings
+- C's string functions assume C-style string data
+    - Array of characters ending with a terminator character
+    - terminator character: '\0' == 0
+    - do not confuse with '0'!
+
+- string literals implicity create C-style strings
+- foo has 4 bytes, 'f' 'o' 'o' '\0'
+- array initialization:
+- int a[5] = {1, 2, 3, 4, 5};
