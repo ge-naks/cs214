@@ -22,42 +22,42 @@ int i;
 - to actually use these addresses, we need to know what data we have
     - address's ("pointer values") are types
 
-```
-int * // type of a pointer to an integer
-int *p; // holds the address of an integer
+    ```
+    int * // type of a pointer to an integer
+    int *p; // holds the address of an integer
 
-int i;
-int *p;
+    int i;
+    int *p;
 
-p = &i;
+    p = &i;
 
-// *p dereferences p. allows us to talk about the object that p points to
+    // *p dereferences p. allows us to talk about the object that p points to
 
-*p = 5; // address of i now holds 5
+    *p = 5; // address of i now holds 5
 
-p = &array[5];
-array[3] = *p;
-```
-- fun fact, array variables decay to pointers, this is how array indexing works
-```
-int a[6];
+    p = &array[5];
+    array[3] = *p;
+    ```
+    - fun fact, array variables decay to pointers, this is how array indexing works
+    ```
+    int a[6];
 
-// a by itself and &a mean the same thing
+    // a by itself and &a mean the same thing
 
-int a[10];
-int *p;
+    int a[10];
+    int *p;
 
-p = a;
+    p = a;
 
-p[0] == a[0] // same thing!
-p[1] == a[1] // same thing!
+    p[0] == a[0] // same thing!
+    p[1] == a[1] // same thing!
 
-p = &a[5];
+    p = &a[5];
 
-p[0] == a[5];
-p[1] == a[6];
-p[-1] == a[4] // neat!
-```
+    p[0] == a[5];
+    p[1] == a[6];
+    p[-1] == a[4] // neat!
+    ```
 
 - Pointer arithmetic:
 ```
@@ -122,4 +122,6 @@ head->next->data
     ```
 - Things that we declare and dont define can be referenced
 - The linker will then be responsible for connecting these references to the actual definition
-
+- definitions actually create things
+    - functions definitionsand global variable definitions
+- A program can declare something as many times as it likes, but it can only define it once.ssd=
