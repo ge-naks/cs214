@@ -7,7 +7,8 @@
 ```
 int i;
 
-// &i == "the memory address of i" (technically speaking, wach byte has its own address, but we refer to the variable with its first address)
+// &i == "the memory address of i" (technically speaking, each byte has its own address
+// but we refer to the variable with its first address)
 ```
 - Every element of a struct or array has an address
 ```
@@ -19,7 +20,7 @@ int i;
     - We can get its address by writing the function name w/ no parentheses
 
 - to actually use these addresses, we need to know what data we have
-    - addresses ("pointer values") are types
+    - address's ("pointer values") are types
 
 ```
 int * // type of a pointer to an integer
