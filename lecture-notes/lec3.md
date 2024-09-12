@@ -124,4 +124,28 @@ head->next->data
 - The linker will then be responsible for connecting these references to the actual definition
 - definitions actually create things
     - functions definitionsand global variable definitions
-- A program can declare something as many times as it likes, but it can only define it once.ssd=
+    - definitions are implicit declarations - often dont need to separate as a consequence
+- A program can declare something as many times as it likes, but it can only define it once
+- We need to explicity declare something
+    - might want to refer to something earlier than its definition in the file (useful in the case of mutual recursion!)
+    ```
+    // example of mutually recursive functions:
+
+    int foo(int); // this is declaration w/o definition!
+
+    int bar (int x) { foo(y)}
+    int foo(int x) { bar(y)}
+    ```
+    - might want to refer to something defined outside out file
+        - standard library! the header files are full of function prototypes
+        - linker takes care of these later
+
+### Header files
+- A header file is a file of C source code containing declarations
+    - Header file names usually end in a .h
+        - The stdlib is a great example. It needs to be used across an entire project potentially, so we have a headerfile where we declare it. 
+- Header files only contain declarations for:
+    - Function prototypes
+    - External variables
+    - Type variables
+- Usually a header is included in multiple .c files
