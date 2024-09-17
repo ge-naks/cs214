@@ -51,7 +51,7 @@
         }
         ```
         - pseudo-macros:
-            - __FILE__ is replaced by a string literal containing the source file's name
-            - __LINE__ is replaced by an integer literal of the line number
+            - ```__FILE__``` is replaced by a string literal containing the source file's name
+            - ```__LINE__``` is replaced by an integer literal of the line number
         
 
