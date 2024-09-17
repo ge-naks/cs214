@@ -113,7 +113,6 @@
 - for indirect references:
     - the value of a pointer gives the location
     - the type of the pointer indicates the object type
-
 ```
 struct node {
     int data;
@@ -128,7 +127,13 @@ struct node *new_node(int d){
 
     return p;
 }
-
 ```
+
+- use malloc() to allocate objects on the heap
+    - malloc takes the size (in bytes) of the object we want to create
+    - malloc(sizeof(struct node));
+    - malloc(100 * sizeof(int));
+    - malloc(n * sizeof(int));
+
 ### The heap
 
