@@ -53,5 +53,82 @@
         - pseudo-macros:
             - ```__FILE__``` is replaced by a string literal containing the source file's name
             - ```__LINE__``` is replaced by an integer literal of the line number
-        
+
+        - can undefine macros with #undef
+
+- conditional compilation
+```
+// if macro with SOME_NAME exists, text will be keps
+#ifdef SOME_NAME
+// todo
+
+#else
+// todo when macro is undefined
+#endif
+
+
+#ifndef SOME_NAME
+// todo if SOME_NAME undefined
+#endif
+
+
+//example:
+
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+```
+    //we can define very simple macros when calling the compiler
+    ```
+    gcc -DDEBUG=1 source.c ...
+    -D<macro_name>=<replacement>
+    ```
+    - 
+
+
+### Objects and Pointers
+- An object is a location in memory where we can store data
+
+- Three categories of objects:
+    - Static Objects
+        - global varables
+        - string literals
+        - code (usually read only)
+    - Stack objects
+        - Local variables
+        - Runtime function information
+    - Heap objects
+        - explicitly allocated by malloc()
+        -explicitly deallocated by free()
+
+- stack objects are associated with a function call
+    - allocated when function is called
+    - deallocated when function returns
+- heap objects can be allocated/deallocated at any time
+- size of heap objects can be determined at runtime
+- any object can be referred to indirectly using a pointer
+- only variables (static and stack objets) can be referred to directly by name
+- to use an object, we need to know its location and the type of its data
+
+- for indirect references:
+    - the value of a pointer gives the location
+    - the type of the pointer indicates the object type
+
+```
+struct node {
+    int data;
+    struct node *next;
+}
+
+struct node *new_node(int d){
+    struct node *p = malloc(sizeof(struct node));
+
+    p->data = d;
+    p->next = null;
+
+    return p;
+}
+
+```
+### The heap
 
