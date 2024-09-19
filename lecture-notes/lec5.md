@@ -129,6 +129,9 @@ void free(void *)
             if (new_array == NULL) { die probably }
             A->data = new_array
         }
+
+        A->data[length] = item;
+        A->length++;
     }
 
     ```
