@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
+#include <windows.h>
 #include <mymalloc.h>
 
 // Case 1: malloc and freeing a 1-byte object, 120 times
@@ -68,7 +68,7 @@ void workload5(){
         myfree(ptrs[i]);
     }
 }
-}
+
 
 int main() {
     struct timeval start, end;
