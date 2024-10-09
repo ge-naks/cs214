@@ -69,6 +69,13 @@ void workload5(){
     }
 }
 
+//Tests the error that occurs when freeing the same pointer twice.
+void workload6() {
+        char *ptr = (char *)mymalloc(1);
+        myfree(ptr);
+        myfree(ptr)
+}
+
 
 int main() {
     struct timeval start, end;
@@ -81,6 +88,7 @@ int main() {
             workload3(); break;
             workload4(); break;
             workload5(); break;
+            workload6(); break;
     }
     gettimeofday(&end, NULL);
     seconds = end.tv_sec - start.tv_sec;
