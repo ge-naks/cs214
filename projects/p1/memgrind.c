@@ -72,6 +72,7 @@ void workload5(){
 }
 
 //Tests the error that occurs when freeing the same pointer twice.
+
 void double_free() {
         char *ptr = (char *)mymalloc(1, __FILE__, __LINE__);
         myfree(ptr, __FILE__, __LINE__);
@@ -121,13 +122,13 @@ void test_malloc_zero(){
     int *p = malloc(0);
 }
 
-
 int main() {
     struct timeval start, end;
     long seconds, microseconds;
     double totalTime;
     gettimeofday(&start, NULL);
     for (int i = 0; i < 50; i++) {
+
             workload1(); 
             workload2(); 
             workload3(); 
