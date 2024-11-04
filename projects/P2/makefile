@@ -1,16 +1,17 @@
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -Wextra -g
 
-all: test_file
+SRC = words.c test_file.c
 
-test_file: words.o test_file.o
-	$(CC) $(CFLAGS) -o test_file words.o test_file.o
+TARGET = words
 
-words.o: words.c words.h
-	$(CC) $(CFLAGS) -c words.c
+all: $(TARGET)
 
-test_file.o: test_file.c words.h
-	$(CC) $(CFLAGS) -c test_file.c
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
+
+run: $(TARGET)
+	./$(TARGET)
 
 clean:
-	rm -f *.o test_file
+	rm -f $(TARGET)
