@@ -5,14 +5,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "words.h"
 
 
-typedef struct node
-{
-    size_t freq;
-    char *word;
-    struct node *next;
-} node;
 
 void insert(char *target_word, node *ptr)
 {
@@ -236,12 +231,13 @@ int call_traverse(int argc, char *argv[], node* ptr)
 
 bool is_valid_hyphen_position(const char *word, int pos, int length)
 {
-    return pos > 0 && pos < length - 1 && isalpha(word[pos - 1]) && isalpha(word[pos + 1]);
+    return (pos > 0 && pos < length - 1 && isalpha(word[pos - 1]) && isalpha(word[pos + 1]))||
+           (pos > 0 && pos < length - 1 && word[pos - 1] == '\'' && word[pos + 1] == '\'');
 }
 
 void count_words(const char *text, node* ptr)
 {
-    int start = 0, length = 0;
+    int length = 0;
     int text_len = strlen(text);
 
     // Buffer to hold each word temporarily.

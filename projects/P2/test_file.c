@@ -12,7 +12,6 @@ int main(int argv, char* args[]) {
 
     head->word = "DUMMY NODE SHOULD NOT SHOW UP!!!!";
     node* dummy_ptr = head;
-    node** headPtr = head;
 
     call_traverse(argv, args, dummy_ptr);
     sort_list(&dummy_ptr);
