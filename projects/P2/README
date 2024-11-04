@@ -1,3 +1,16 @@
 George Nakhla gn158
 Jeff Chen jc2936
 
+The insert function goes through the file and adds each word into a linked list.
+The function sort_list is used at the end of the program to go through the list and then sort everything into the desired ordered
+The print_list prints the linked list out and then the memory gets freed by the function free_list
+For the traversing of the given arguements, we use the functions traverse and test_traverse. call_traverse is used first where it checks if the given arguement is a file or a directory. If it is a file, it ensures that the 
+file ends with .txt. If it is a directory, it then goes to the traverse function that checks if it is an existing directory where if it is, it traverses through and processes all of the files that end with .txt in that directory.
+This also works with all subdirectories in the directory.
+We then have a process_text that takes in a file path and then returns a pointer to a string that has all of the contents of the file
+The string then goes through count_words that goes and identifies all the words in a string based off of the definition given by the instruction and then counts the frequency of the words. This function also calls the insert function
+for every time it counts the words
+
+
+For test cases, we have many different scenarios such as singular test files and test_directories that include files that doesn't end with .txt and files that have matching names with files outside of the directory. In these files,
+there are a variety of different words to showcase the requirements of a word that was given in the instructions.
