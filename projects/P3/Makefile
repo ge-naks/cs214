@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g -fsanitize=address
 
-SRC = mysh.c
+SRC = mysh.c arraylist.c
 
 TARGET = mysh
 
