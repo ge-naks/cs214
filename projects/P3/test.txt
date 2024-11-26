@@ -1,0 +1,5 @@
+pwd
+cd testdir
+pwd
+cd ../
+exit

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g -fsanitize=address
+CFLAGS =  -Wall -fsanitize=address
 
 SRC = mysh.c arraylist.c
 

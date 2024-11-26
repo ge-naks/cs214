@@ -1,9 +1,9 @@
-typedef struct ArrayList {
-  int length;
-  int capacity;
-  char **items;
+typedef struct {
+    void **data;      // Array of void pointers to hold generic data
+    size_t size;      // Current number of elements
+    size_t capacity;  // Total capacity
 } ArrayList;
-
+  
 typedef struct Command {
     ArrayList* arguments;
     char *execpath;
@@ -11,9 +11,8 @@ typedef struct Command {
     char *outputfile;
 } Command;
 
-ArrayList *newList(void);
-void check(ArrayList *list);
-void add(ArrayList *list, const char *s);
-void addCommand(ArrayList *list, const Command *cmd);
+ArrayList *newList(size_t initial_capacity);
+void add(ArrayList *list, void *element);
 void freelist(ArrayList *list);
-void freelistcontent(ArrayList *list);
+void freecommand(Command* command);
+void freecommandlist(ArrayList* commandsList);
