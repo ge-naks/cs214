@@ -25,6 +25,27 @@ ArrayList *tokenize_input(char str[])
     return tokens;
 }
 
+void remove_newlines_from_arraylist(ArrayList *list)
+{
+    // Iterate through the elements in the ArrayList
+    for (size_t i = 0; i < list->size; ++i)
+    {
+        char *str = (char *)list->data[i]; // Cast the void pointer to char pointer
+
+        // Check if the current element is a valid string
+        if (str != NULL)
+        {
+            size_t len = strlen(str);
+
+            // If a newline character is found at the end, remove it
+            if (len > 0 && str[len - 1] == '\n')
+            {
+                str[len - 1] = '\0';
+            }
+        }
+    }
+}
+
 ArrayList *makeCommandList(ArrayList *tokens)
 {
     ArrayList *args = newList(2);         // Temporary list to hold arguments
@@ -131,61 +152,86 @@ void printCommands(ArrayList *commands)
     }
 }
 
-char *BareSearch(const char *directory, const char *filename) {
+char *BareSearch(const char *filename)
+{
     struct dirent *entry;
-    DIR *dir = opendir(directory);
+    DIR *dir = opendir("/usr/local/bin");
 
-    if (dir == NULL) {
+    if (dir == NULL)
+    {
         perror("opendir");
         return NULL; // Error opening directory
     }
 
     char *full_path = malloc(4096); // Allocate memory for the path
-    if (full_path == NULL) {
+    if (full_path == NULL)
+    {
         perror("malloc");
         closedir(dir);
         return NULL;
     }
 
-    while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, filename) == 0) {
-            snprintf(full_path, 4096, "%s/%s", directory, filename);
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strcmp(entry->d_name, filename) == 0)
+        {
+            snprintf(full_path, 4096, "%s/%s", "/usr/local/bin", filename);
+            free(full_path);
             closedir(dir);
-            return full_path; // Return the full path
+            return "/usr/local/bin"; // Return the full path
+        }
+    }
+    closedir(dir);
+
+    dir = opendir("/usr/bin");
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strcmp(entry->d_name, filename) == 0)
+        {
+            snprintf(full_path, 4096, "%s/%s", "/usr/bin", filename);
+            free(full_path);
+            closedir(dir);
+            return "/usr/bin"; // Return the full path
+        }
+    }
+    closedir(dir);
+
+    dir = opendir("/bin");
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (strcmp(entry->d_name, filename) == 0)
+        {
+            snprintf(full_path, 4096, "%s/%s", "/bin", filename);
+            free(full_path);
+            closedir(dir);
+            return "/bin"; // Return the full path
         }
     }
 
     closedir(dir);
-    free(full_path); // Free the memory if the file is not found
+    free(full_path);
     return NULL;
 }
 
-
-
-
 void callCommands(ArrayList *commands)
 {
+
     for (int i = 0; i < commands->size; i++)
     {
         Command *cmd = (Command *)commands->data[i];
         ArrayList *args = cmd->arguments;
+        remove_newlines_from_arraylist(args);
 
         // Ensure there is at least one argument (the command itself)
         if (args->size > 0)
         {
             char *command_name = (char *)args->data[0];
 
-            size_t len = strlen(command_name);
-            if (len > 0 && command_name[len - 1] == '\n')
-            {
-                command_name[len - 1] = '\0';
-            }
-
             if (strcmp(command_name, "cd") == 0)
             {
                 if (args->size == 2)
                 {
-                    
+
                     // Get the directory to change to
                     char *target_dir = (char *)args->data[1];
 
@@ -195,7 +241,6 @@ void callCommands(ArrayList *commands)
                     {
                         target_dir[len - 1] = '\0';
                     }
-
 
                     // Try to change the directory
                     if (chdir(target_dir) == 0)
@@ -233,7 +278,7 @@ void callCommands(ArrayList *commands)
                     else
                     {
                         perror("getcwd() error");
-                    } 
+                    }
                 }
                 else
                 {
@@ -241,42 +286,72 @@ void callCommands(ArrayList *commands)
                 }
             }
 
+            if (strcmp(command_name, "which") == 0)
+            {
+                if (args->size == 2)
+                {
+                    char *target_file = (char *)(args->data[1]);
 
-            if (strcmp(command_name, "which") == 0) {
-                if(args->size == 2){
-                    char* target_file = (char *)(args->data[1]);
+                    char *result = BareSearch(target_file);
 
-                    size_t len = strlen(target_file);
-                    if (len > 0 && target_file[len - 1] == '\n')
+                    if (result)
                     {
-                        target_file[len - 1] = '\0';
+                        printf("%s\n", result);
+                    }
+                }
+            }
+
+            if (command_name[0] != '/')
+            {
+                char *bare_path = BareSearch(command_name);
+                if (NULL == bare_path)
+                {
+                    // command doesn't exist
+                    printf("command not recognized\n");
+                }
+                else
+                {
+                    size_t path_length = strlen(bare_path) + strlen(command_name) + 2;
+                    char *command_path = (char *)malloc(path_length);
+                    if (command_path == NULL)
+                    {
+                        perror("malloc failed");
+                        exit(EXIT_FAILURE);
                     }
 
-                    char* result1 = BareSearch("/usr/local/bin", target_file);
-                    char* result2 = BareSearch("/usr/bin", target_file);
-                    char* result3 = BareSearch("/bin", target_file);
-
-                    if(result1){
-                        printf("%s\n", result1);
-                    }else if(result2){
-                        printf("%s\n", result2);
-                    }else if(result3){
-                        printf("%s\n", result3);
+                    // Concatenate the base path and command name
+                    strcpy(command_path, bare_path);
+                    strcat(command_path, "/");
+                    strcat(command_path, command_name);
+                    char *ptr = NULL;
+                    add(args, ptr);
+                    char *t[args->size];
+                    for (int i = 0; i < args->size; i++)
+                    {
+                        t[i] = args->data[i];
                     }
 
+                    // fork() call, wait for execv command to be called
 
-                    free(result1);
-                    free(result2);
-                    free(result3);
+                    int pid = fork();
 
+                    if(pid < 0){
+                        perror("fork failure");
+                    }else if(pid == 0){
+                        // execute
+                        execv(command_path, t);
 
+                    }else{
+                        wait(NULL);
+                    }
 
+                    // Free the allocated memory
+                    free(command_path);
                 }
             }
         }
     }
 }
-
 
 
 int main(int argc, char **args)
@@ -326,9 +401,6 @@ int main(int argc, char **args)
             printf("mysh> ");
         }
     }
-
-
-
 
     match_files("*.txt");
 
