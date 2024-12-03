@@ -1,0 +1,15 @@
+/usr/bin/echo foo bar baz
+host google.com
+pwd
+cd folder
+ls
+pwd
+cd
+pwd
+which
+which echo
+ls *.txt
+ls o*txt
+ls folder/s*t
+echo test > out
+ls | grep .txt

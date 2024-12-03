@@ -9,6 +9,7 @@ typedef struct Command {
     char *execpath;
     char *inputfile;
     char *outputfile;
+    int is_pipe_output;
 } Command;
 
 ArrayList *newList(size_t initial_capacity);
@@ -16,3 +17,4 @@ void add(ArrayList *list, void *element);
 void freelist(ArrayList *list);
 void freecommand(Command* command);
 void freecommandlist(ArrayList* commandsList);
+ArrayList *tokenize_input(char str[]);

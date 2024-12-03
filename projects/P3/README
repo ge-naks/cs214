@@ -1,0 +1,138 @@
+George Nakhla gn158
+Jeff Chen jc2936
+
+
+# My Shell (mysh)
+## Overview
+
+mysh is a custom shell implementation in C that supports interactive and batch modes, basic built-in commands (cd, pwd, which), piping, file redirection, wildcard (globbing) patterns, and execution of external commands. It is a lightweight alternative to traditional shells, demonstrating core concepts like process creation, I/O redirection, and command parsing.
+Features
+
+    Interactive and Batch Modes:
+        In interactive mode, the user receives a prompt (mysh>) to input commands.
+        In batch mode, commands are read from a file or piped into the shell.
+
+    Built-in Commands:
+        cd: Change the current working directory.
+        pwd: Print the current working directory.
+        which: Locate the full path of an executable.
+
+    External Commands:
+        Supports executing external programs by searching for binaries in predefined directories.
+
+    Piping:
+        Allows chaining commands using |, where the output of one command serves as input for the next.
+
+    File Redirection:
+        Input redirection (<) and output redirection (>) are supported for commands.
+
+    Wildcard Support:
+        Matches filenames using globbing patterns like *.
+
+    Graceful Exit:
+        Users can exit the shell with the exit command.
+
+How It Works
+1. Input Handling
+
+    The shell reads input line by line using getline. Depending on the mode:
+        Interactive Mode: Input is read from the terminal with a prompt.
+        Batch Mode: Input is read from a file or standard input.
+
+2. Command Parsing
+
+    Input is split into commands separated by | (pipes).
+    Each command is further split into arguments, stored in a 2D array (cmds[MAX_COMMANDS][MAX_ARGS]).
+
+3. Built-in Commands
+
+    Recognizes and executes cd, pwd, and which directly within the shell.
+
+4. Wildcard Matching
+
+    Checks for wildcard patterns (*) in arguments using glob.
+    Replaces arguments with matched files before executing commands.
+
+5. Command Execution
+
+    Handles commands in two ways:
+        Single Command: Executes directly using execv.
+        Piped Commands: Creates a pipeline of processes using pipe and fork.
+
+6. Redirection
+
+    Detects < and > in commands to set up input and output redirection using dup2.
+
+7. Process Management
+
+    Uses fork to create child processes for commands.
+    The parent process waits for all child processes to complete.
+
+Key Functions
+1. handle_redirections()
+
+    Manages input/output redirection by opening files and redirecting file descriptors.
+
+2. has_wc()
+
+    Detects if a command contains a wildcard pattern (*).
+
+3. match_files()
+
+    Matches files using glob based on a given wildcard pattern.
+
+4. execute_pipe()
+
+    Executes piped commands by setting up a chain of processes connected by pipes.
+
+5. handle_cd(), handle_pwd(), handle_which()
+
+    Implements the built-in commands cd, pwd, and which.
+
+6. BareSearch()
+
+    Searches for an executable in predefined system paths (/usr/local/bin, /usr/bin, /bin).
+
+7. handle_wildcards_and_execute()
+
+    Replaces wildcard patterns with matched files and executes the updated commands.
+
+Usage
+1. Compile the Shell
+
+gcc -o mysh mysh.c -lglob
+
+2. Run in Interactive Mode
+
+./mysh
+
+3. Run in Batch Mode
+
+./mysh <batch_file>
+
+Examples
+Interactive Commands
+
+mysh> ls -l
+mysh> cat < input.txt > output.txt
+mysh> echo Hello | grep H
+mysh> cd /path/to/dir
+mysh> pwd
+
+Batch File Example
+
+batch.txt:
+
+ls -a
+echo "This is batch mode"
+cd /home
+pwd
+
+Run:
+
+./mysh batch.txt
+
+Wildcards
+
+mysh> ls *.c
+mysh> cat *.txt

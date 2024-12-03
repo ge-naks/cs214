@@ -10,357 +10,392 @@
 #include <sys/wait.h>
 #include <glob.h>
 #include "arraylist.h"
+#include <fcntl.h>
 
-// tokenize our input
-ArrayList *tokenize_input(char str[])
+#define MAX_ARGS 100
+#define MAX_COMMANDS 100
+
+void handle_redirections(char *cmd[], int *input_fd, int *output_fd)
 {
-    ArrayList *tokens = newList(2);
-
-    char *pch = strtok(str, " ");
-    while (pch != NULL)
+    for (int i = 0; cmd[i] != NULL; i++)
     {
-        add(tokens, pch);
-        pch = strtok(NULL, " ");
+        if (strcmp(cmd[i], "<") == 0)
+        {
+            *input_fd = open(cmd[i + 1], O_RDONLY);
+            if (*input_fd == -1)
+            {
+                perror("open input file");
+                exit(1);
+            }
+            cmd[i] = NULL;
+        }
+        else if (strcmp(cmd[i], ">") == 0)
+        {
+            *output_fd = open(cmd[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0640);
+            if (*output_fd == -1)
+            {
+                perror("open output file");
+                exit(1);
+            }
+            cmd[i] = NULL;
+        }
     }
-    return tokens;
 }
 
-void remove_newlines_from_arraylist(ArrayList *list)
+char *has_wc(char *cmds[MAX_COMMANDS][MAX_ARGS], int num_commands)
 {
-    // Iterate through the elements in the ArrayList
-    for (size_t i = 0; i < list->size; ++i)
+    for (int i = 0; i < num_commands; i++)
     {
-        char *str = (char *)list->data[i]; // Cast the void pointer to char pointer
-
-        // Check if the current element is a valid string
-        if (str != NULL)
+        for (int arg_index = 0; cmds[i][arg_index] != NULL; arg_index++)
         {
-            size_t len = strlen(str);
-
-            // If a newline character is found at the end, remove it
-            if (len > 0 && str[len - 1] == '\n')
+            for (int char_index = 0; cmds[i][arg_index][char_index] != '\0'; char_index++)
             {
-                str[len - 1] = '\0';
+                if (cmds[i][arg_index][char_index] == '*')
+                {
+                    return cmds[i][arg_index]; // Return the argument containing the wildcard
+                }
             }
         }
     }
-}
-
-ArrayList *makeCommandList(ArrayList *tokens)
-{
-    ArrayList *args = newList(2);         // Temporary list to hold arguments
-    ArrayList *commandsList = newList(2); // List of all commands
-    Command *currCommand = NULL;          // Initialize to NULL
-
-    const char *pipe = "|";
-    const char *l_redirect = "<";
-    const char *r_redirect = ">";
-
-    for (int i = 0; i < tokens->size; i++)
-    {
-        if (strcmp(tokens->data[i], l_redirect) == 0 || strcmp(tokens->data[i], r_redirect) == 0 || strcmp(tokens->data[i], pipe) == 0)
-        {
-
-            // Allocate a new Command structure if needed
-            if (currCommand == NULL)
-            {
-                currCommand = (Command *)malloc(sizeof(Command));
-                currCommand->arguments = NULL;
-                currCommand->execpath = NULL;
-                currCommand->inputfile = NULL;
-                currCommand->outputfile = NULL;
-            }
-
-            currCommand->arguments = args;
-
-            // Add current command to the list of commands
-            add(commandsList, currCommand);
-
-            ArrayList *operatorlist = newList(2);
-            add(operatorlist, tokens->data[i]);
-            Command *operatorCommand = (Command *)malloc(sizeof(Command));
-
-            operatorCommand->arguments = operatorlist;
-            add(commandsList, operatorCommand);
-
-            // Reset for the next command
-            args = newList(2);
-            currCommand = NULL; // Ensure a new Command is allocated in the next iteration
-        }
-        else
-        {
-            add(args, tokens->data[i]);
-        }
-    }
-
-    if (currCommand == NULL)
-    {
-        currCommand = (Command *)malloc(sizeof(Command));
-        currCommand->arguments = NULL;
-        currCommand->execpath = NULL;
-        currCommand->inputfile = NULL;
-        currCommand->outputfile = NULL;
-    }
-
-    currCommand->arguments = args;
-    add(commandsList, currCommand);
-
-    return commandsList;
-}
-
-void match_files(const char *pattern)
-{
-    glob_t results;
-    int ret;
-
-    ret = glob(pattern, 0, NULL, &results);
-
-    if (ret == 0)
-    {
-        printf("Matched files:\n");
-        for (size_t i = 0; i < results.gl_pathc; i++)
-        {
-            printf("  %s\n", results.gl_pathv[i]);
-        }
-    }
-    else if (ret == GLOB_NOMATCH)
-    {
-        printf("No matches found for pattern: %s\n", pattern);
-    }
-    else
-    {
-        printf("Error occurred while processing pattern: %s\n", pattern);
-    }
-
-    globfree(&results);
-}
-
-void printlist(ArrayList *list)
-{
-    for (int i = 0; i < list->size; i++)
-    {
-        printf("%s ", (char *)(list->data[i]));
-    }
-}
-
-void printCommands(ArrayList *commands)
-{
-    for (int i = 0; i < commands->size; i++)
-    {
-        printlist(((Command *)commands->data[i])->arguments);
-        printf("\n");
-    }
+    return NULL; // No wildcard found
 }
 
 char *BareSearch(const char *filename)
 {
     struct dirent *entry;
-    DIR *dir = opendir("/usr/local/bin");
+    DIR *dir;
+    const char *paths[] = {"/usr/local/bin", "/usr/bin", "/bin"};
+    static char full_path[4096]; // Fixed-size array for the path
 
-    if (dir == NULL)
+    for (int i = 0; i < 3; i++)
     {
-        perror("opendir");
-        return NULL; // Error opening directory
+        dir = opendir(paths[i]);
+        if (dir == NULL)
+        {
+            perror("opendir");
+            continue;
+        }
+
+        while ((entry = readdir(dir)) != NULL)
+        {
+            if (strcmp(entry->d_name, filename) == 0)
+            {
+                snprintf(full_path, sizeof(full_path), "%s/%s", paths[i], filename);
+                closedir(dir);
+                return full_path; // Return the full path
+            }
+        }
+        closedir(dir);
     }
 
-    char *full_path = malloc(4096); // Allocate memory for the path
-    if (full_path == NULL)
+    return NULL; // Command not found
+}
+
+glob_t *match_files(const char *pattern)
+{
+    glob_t *results = malloc(sizeof(glob_t)); // Allocate memory for results
+    if (results == NULL)
     {
         perror("malloc");
-        closedir(dir);
         return NULL;
     }
 
-    while ((entry = readdir(dir)) != NULL)
+    int ret = glob(pattern, 0, NULL, results);
+    if (ret == 0)
     {
-        if (strcmp(entry->d_name, filename) == 0)
+        return results; // Successfully matched files
+    }
+    else
+    {
+        free(results); // Free the allocated memory
+        if (ret == GLOB_NOMATCH)
         {
-            snprintf(full_path, 4096, "%s/%s", "/usr/local/bin", filename);
-            free(full_path);
-            closedir(dir);
-            return "/usr/local/bin"; // Return the full path
+            return NULL; // No matches found
         }
     }
-    closedir(dir);
-
-    dir = opendir("/usr/bin");
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (strcmp(entry->d_name, filename) == 0)
-        {
-            snprintf(full_path, 4096, "%s/%s", "/usr/bin", filename);
-            free(full_path);
-            closedir(dir);
-            return "/usr/bin"; // Return the full path
-        }
-    }
-    closedir(dir);
-
-    dir = opendir("/bin");
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (strcmp(entry->d_name, filename) == 0)
-        {
-            snprintf(full_path, 4096, "%s/%s", "/bin", filename);
-            free(full_path);
-            closedir(dir);
-            return "/bin"; // Return the full path
-        }
-    }
-
-    closedir(dir);
-    free(full_path);
-    return NULL;
 }
 
-void callCommands(ArrayList *commands)
+void execute_pipe(char *cmds[MAX_COMMANDS][MAX_ARGS], int num_commands, bool mode_flag) {
+    // Terminate the program if we get exit first
+    if (strcmp(cmds[0][0], "exit") == 0) {
+        if(mode_flag){
+             printf("mysh: exiting\n");
+            for(int i = 0; i < num_commands; i ++){
+                int idx = 1;
+                while(cmds[i][idx] != NULL){
+                    printf("%s\n", cmds[i][idx]);
+                    idx++;
+                }
+            }
+            exit(0);
+        }else if (!mode_flag){
+            printf("Exiting my shell.\n");
+            for(int i = 0; i < num_commands; i ++){
+                int idx = 1;
+                while(cmds[i][idx] != NULL){
+                    printf("%s\n", cmds[i][idx]);
+                    idx++;
+                }
+            }
+            exit(0);
+        }
+    }
+
+    int pipefd[2 * (num_commands - 1)];
+    int input_fd = -1, output_fd = -1;
+
+    
+
+    for (int i = 0; i < num_commands - 1; i++) {
+        if (pipe(pipefd + i * 2) == -1) {
+            perror("pipe");
+            exit(1);
+        }
+    }
+
+    for (int i = 0; i < num_commands; i++) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            perror("fork");
+            exit(1);
+        }
+
+        if (pid == 0) {
+            if (i > 0) {
+                dup2(pipefd[(i - 1) * 2], STDIN_FILENO);
+            }
+            if (i < num_commands - 1) {
+                dup2(pipefd[i * 2 + 1], STDOUT_FILENO);
+            }
+
+            handle_redirections(cmds[i], &input_fd, &output_fd);
+
+            if (input_fd != -1) {
+                dup2(input_fd, STDIN_FILENO);
+                close(input_fd);
+            }
+
+            if (output_fd != -1) {
+                dup2(output_fd, STDOUT_FILENO);
+                close(output_fd);
+            }
+
+            // Close all pipe file descriptors
+            for (int j = 0; j < 2 * (num_commands - 1); j++) {
+                close(pipefd[j]);
+            }
+
+            // Get the full path of the command
+            char *cmd_path = BareSearch(cmds[i][0]);
+            if (cmd_path == NULL) {
+                perror("Command not found");
+                exit(1);
+            }
+
+            // Execute the command with execv
+            if (execv(cmd_path, cmds[i]) == -1) {
+                perror("execv");
+                exit(1);
+            }
+        }
+    }
+
+    // Close all pipe file descriptors in the parent process
+    for (int i = 0; i < 2 * (num_commands - 1); i++) {
+        close(pipefd[i]);
+    }
+
+    // Wait for all child processes to finish
+    for (int i = 0; i < num_commands; i++) {
+        wait(NULL);
+    }
+}
+
+
+void print_commands(char *cmds[MAX_COMMANDS][MAX_ARGS], int num_commands)
 {
-
-    for (int i = 0; i < commands->size; i++)
+    printf("Parsed Commands and Arguments:\n");
+    for (int i = 0; i < num_commands; i++)
     {
-        Command *cmd = (Command *)commands->data[i];
-        ArrayList *args = cmd->arguments;
-        remove_newlines_from_arraylist(args);
-
-        // Ensure there is at least one argument (the command itself)
-        if (args->size > 0)
+        printf("Command %d:\n", i + 1);
+        int arg_index = 0;
+        while (cmds[i][arg_index] != NULL)
         {
-            char *command_name = (char *)args->data[0];
+            printf("  Arg %d: %s\n", arg_index, cmds[i][arg_index]);
+            arg_index++;
+        }
+    }
+    printf("\n");
+}
 
-            if (strcmp(command_name, "cd") == 0)
+void handle_cd(char **args)
+{
+    if (args[1] == NULL)
+    {
+        printf("mysh: cd: missing argument\n");
+        return;
+    }
+    char *target_dir = args[1];
+    size_t len = strlen(target_dir);
+    if (len > 0 && target_dir[len - 1] == '\n')
+    {
+        target_dir[len - 1] = '\0';
+    }
+    if (chdir(target_dir) != 0)
+    {
+        perror("mysh: cd");
+    }
+}
+
+// Function to handle "pwd"
+void handle_pwd()
+{
+    char cwd[FILENAME_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != NULL)
+    {
+        printf("Current working directory: %s\n", cwd);
+    }
+    else
+    {
+        perror("getcwd() error");
+    }
+}
+
+// Function to handle "which"
+void handle_which(char **args)
+{
+    if (args[1] == NULL)
+    {
+        return;
+    }
+    char *target_file = args[1];
+    char *result = BareSearch(target_file);
+    if (result)
+    {
+        printf("%s\n", result);
+    }
+    else
+    {
+        printf("mysh: which: %s not found\n", target_file);
+    }
+}
+
+void handle_barename(char *cmd[])
+{
+    pid_t pid = fork();
+
+    if (pid == -1)
+    {
+        // Fork failed
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0)
+    {
+        // Child process
+        // Execute the command
+        execv(cmd[0], cmd);
+
+        // If execv returns, it means an error occurred
+        perror("execv");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        // Parent process
+        int status;
+        waitpid(pid, &status, 0);
+
+        // Check if child process exited normally
+        if (WIFEXITED(status))
+        {
+            int exit_status = WEXITSTATUS(status);
+            if (exit_status != 0)
             {
-                if (args->size == 2)
-                {
-
-                    // Get the directory to change to
-                    char *target_dir = (char *)args->data[1];
-
-                    // Strip any trailing newline characters
-                    size_t len = strlen(target_dir);
-                    if (len > 0 && target_dir[len - 1] == '\n')
-                    {
-                        target_dir[len - 1] = '\0';
-                    }
-
-                    // Try to change the directory
-                    if (chdir(target_dir) == 0)
-                    {
-                        // Successfully changed directory
-                        printf("Changed directory to: %s\n", target_dir);
-                    }
-                    else
-                    {
-                        // Error changing directory
-                        perror("mysh: cd");
-                    }
-                }
-                else if (args->size == 1)
-                {
-                    // Too few arguments
-                    printf("mysh: cd: missing argument\n");
-                }
-                else
-                {
-                    // Too many arguments
-                    printf("mysh: cd: too many arguments\n");
-                }
+                fprintf(stderr, "Command exited with status %d\n", exit_status);
             }
+        }
 
-            if (strcmp(command_name, "pwd") == 0)
-            {
-                if (args->size == 1)
-                {
-                    char cwd[FILENAME_MAX];
-                    if (getcwd(cwd, sizeof(cwd)) != NULL)
-                    {
-                        printf("Current working directory: %s\n", cwd);
-                    }
-                    else
-                    {
-                        perror("getcwd() error");
-                    }
-                }
-                else
-                {
-                    printf("mysh: pwd: too many arguments\n");
-                }
-            }
-
-            if (strcmp(command_name, "which") == 0)
-            {
-                if (args->size == 2)
-                {
-                    char *target_file = (char *)(args->data[1]);
-
-                    char *result = BareSearch(target_file);
-
-                    if (result)
-                    {
-                        printf("%s\n", result);
-                    }
-                }
-            }
-
-            if (command_name[0] != '/')
-            {
-                char *bare_path = BareSearch(command_name);
-                if (NULL == bare_path)
-                {
-                    // command doesn't exist
-                    printf("command not recognized\n");
-                }
-                else
-                {
-                    size_t path_length = strlen(bare_path) + strlen(command_name) + 2;
-                    char *command_path = (char *)malloc(path_length);
-                    if (command_path == NULL)
-                    {
-                        perror("malloc failed");
-                        exit(EXIT_FAILURE);
-                    }
-
-                    // Concatenate the base path and command name
-                    strcpy(command_path, bare_path);
-                    strcat(command_path, "/");
-                    strcat(command_path, command_name);
-                    char *ptr = NULL;
-                    add(args, ptr);
-                    char *t[args->size];
-                    for (int i = 0; i < args->size; i++)
-                    {
-                        t[i] = args->data[i];
-                    }
-
-                    // fork() call, wait for execv command to be called
-
-                    int pid = fork();
-
-                    if(pid < 0){
-                        perror("fork failure");
-                    }else if(pid == 0){
-                        // execute
-                        execv(command_path, t);
-
-                    }else{
-                        wait(NULL);
-                    }
-
-                    // Free the allocated memory
-                    free(command_path);
-                }
-            }
+        // Check if child process was terminated by a signal
+        if (WIFSIGNALED(status))
+        {
+            int signal_number = WTERMSIG(status);
+            fprintf(stderr, "Command terminated by signal %d\n", signal_number);
         }
     }
 }
 
+void handle_wildcards_and_execute(char *cmds[MAX_COMMANDS][MAX_ARGS], int num_commands, bool mode_flag)
+{
+    // Dynamically track allocated memory
+    char *allocated_memory[MAX_COMMANDS * MAX_ARGS] = {NULL};
+    int allocated_count = 0;
+
+    for (int i = 0; i < num_commands; i++)
+    {
+        char *updated_cmds[MAX_ARGS] = {NULL};
+        int updated_arg_count = 0;
+
+        for (int j = 0; cmds[i][j] != NULL; j++)
+        {
+            char *token = cmds[i][j];
+
+            // Check if the argument contains a wildcard
+            if (strchr(token, '*') != NULL)
+            {
+                glob_t files;
+                if (glob(token, GLOB_TILDE, NULL, &files) == 0)
+                {
+                    // Add matched files to updated_cmds
+                    for (size_t k = 0; k < files.gl_pathc && updated_arg_count < MAX_ARGS - 1; k++)
+                    {
+                        char *match = strdup(files.gl_pathv[k]);
+                        updated_cmds[updated_arg_count++] = match;
+                        allocated_memory[allocated_count++] = match; // Track for cleanup
+                    }
+                    globfree(&files);
+                }
+                else
+                {
+                    fprintf(stderr, "No matches found for pattern: %s\n", token);
+                }
+            }
+            else
+            {
+                // Add the argument as-is
+                updated_cmds[updated_arg_count++] = token;
+            }
+        }
+
+        updated_cmds[updated_arg_count] = NULL; // Null-terminate the argument list
+
+        // Replace the original cmds[i] with updated_cmds
+        for (int j = 0; updated_cmds[j] != NULL; j++)
+        {
+            cmds[i][j] = updated_cmds[j];
+        }
+        cmds[i][updated_arg_count] = NULL; // Ensure cmds[i] is null-terminated
+    }
+
+    // Execute the updated commands
+    execute_pipe(cmds, num_commands, mode_flag);
+
+    // Free dynamically allocated memory
+    for (int i = 0; i < allocated_count; i++)
+    {
+        free(allocated_memory[i]);
+    }
+}
 
 int main(int argc, char **args)
 {
     char *str = NULL;
     size_t len = 0;
     FILE *input = NULL;
-    bool mode_flag = true; // false for batch, true for interactive
+    bool mode_flag = true; // false for batch mode, true for interactive mode
 
+    // Determine input source
     if (argc > 1)
     {
         input = fopen(args[1], "r");
@@ -369,41 +404,112 @@ int main(int argc, char **args)
             perror("Error opening file");
             return 1;
         }
+        mode_flag = false; // Batch mode
     }
     else if (isatty(fileno(stdin)))
     {
+        // Interactive mode with welcome message
         printf("Welcome to my (s)hell!\n");
         printf("mysh> ");
         input = stdin;
     }
     else
     {
+        // Batch mode from stdin
         mode_flag = false;
         input = stdin;
     }
 
-    // Read the entire input
+    // Read input line by line
     while (getline(&str, &len, input) != -1)
     {
-        if (strcmp(str, "exit\n") == 0 && mode_flag)
+        // Check for "exit" command in interactive mode
+        if (mode_flag && strcmp(str, "exit\n") == 0)
         {
             printf("mysh: exiting\n");
             break;
         }
-        // Tokenize and process input line by line
-        ArrayList *tokens = tokenize_input(str);
-        ArrayList *commands = makeCommandList(tokens);
-        callCommands(commands);
-        freelist(tokens);
-        freecommandlist(commands);
+        else if (strcmp(str, "exit\n") == 0)
+        {
+            printf("Exiting my shell.\n");
+            break;
+        }
+
+        // Parse the command line into commands
+        char *commands[MAX_COMMANDS];
+        int num_commands = 0;
+
+        // Tokenize by pipe "|"
+        char *token = strtok(str, "|");
+        while (token != NULL && num_commands < MAX_COMMANDS)
+        {
+            commands[num_commands++] = token;
+            token = strtok(NULL, "|");
+        }
+
+        // Parse each command into arguments
+        char *cmds[MAX_COMMANDS][MAX_ARGS] = {NULL};
+        for (int i = 0; i < num_commands; i++)
+        {
+            int num_args = 0;
+            token = strtok(commands[i], " \t\n");
+            while (token != NULL && num_args < MAX_ARGS - 1)
+            {
+                cmds[i][num_args++] = token;
+                token = strtok(NULL, " \t\n");
+            }
+            cmds[i][num_args] = NULL; // Null-terminate the argument list
+        }
+
+        // Print the parsed commands for debugging
+        // print_commands(cmds, num_commands);
+        // printf("%d\n", num_commands);
+
+        char *wc_pattern = has_wc(cmds, num_commands); // contains a pattern if it exists, NULL otherwise
+        glob_t *files = match_files(wc_pattern);
+        // Check for built-in commands and call the corresponding function
+        if (wc_pattern == NULL || files == NULL)
+        {
+            // we dont worry about handling wildcards in here, operate normally
+            if (strcmp(cmds[0][0], "cd") == 0)
+            {
+                handle_cd(cmds[0]);
+            }
+            else if (strcmp(cmds[0][0], "pwd") == 0)
+            {
+                handle_pwd();
+            }
+            else if (strcmp(cmds[0][0], "which") == 0)
+            {
+                handle_which(cmds[0]);
+            }
+            else if (cmds[0][0] != NULL && strncmp(cmds[0][0], "/", 1) == 0)
+            {
+                handle_barename(cmds[0]);
+            }
+            else
+            {
+                // Execute the command normally if it's not a built-in
+                execute_pipe(cmds, num_commands, mode_flag);
+            }
+        }
+        else
+        {
+            // need to handle wildcards
+            handle_wildcards_and_execute(cmds, num_commands, mode_flag);
+
+            globfree(files);
+            free(files);
+        }
+
+        // Print shell prompt in interactive mode
         if (mode_flag)
         {
             printf("mysh> ");
         }
     }
 
-    match_files("*.txt");
-
+    // Free the input buffer and close the file if not stdin
     free(str);
     if (input != stdin)
     {

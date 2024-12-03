@@ -52,9 +52,14 @@ void freecommand(Command* command) {
 
 void freecommandlist(ArrayList* commandsList) {
     for (size_t i = 0; i < commandsList->size; i++) {
-        Command* command = (Command*)commandsList->data[i];
-        freelist(command->arguments); // Free the arguments list
-        free(command); // Free the command itself
-    }
-    freelist(commandsList); // Free the commands list
-} 
+    Command *cmd = (Command *)commandsList->data[i];
+    free(cmd->arguments->data);
+    free(cmd->arguments);
+    if (cmd->inputfile) free(cmd->inputfile);
+    if (cmd->outputfile) free(cmd->outputfile);
+    free(cmd);
+}
+    free(commandsList->data);
+    free(commandsList);
+
+}
